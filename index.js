@@ -1,14 +1,27 @@
 const canvas = document.getElementById('canvas');
+// Ajuster la résolution du canvas à la taille d'affichage :
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+
 const ctx = canvas.getContext('2d');
 
 
 console.log(canvas.width, screen.width);
 // Compute tile_width according to canvas width
 
-const TILES_PER_ROW = 4;
+const TILES_PER_ROW = 15;
+const TILES_PER_COLUMN = 10;
 
 const TILE_WIDTH = canvas.width / TILES_PER_ROW;
-const TILE_HEIGHT = canvas.height / TILES_PER_ROW;
+const TILE_HEIGHT = canvas.height / TILES_PER_COLUMN;
+
+const MOVE_THRESHOLD = 0.4;
+
+
+const MOVE_THRESHOLD_SCREEN_LEFT = MOVE_THRESHOLD * canvas.width - 5;
+const MOVE_THRESHOLD_SCREEN_RIGHT = (1 - MOVE_THRESHOLD) * canvas.width;
+const MOVE_THRESHOLD_SCREEN_TOP = MOVE_THRESHOLD * canvas.height - 5;
+const MOVE_THRESHOLD_SCREEN_BOTTOM = (1 - MOVE_THRESHOLD) * canvas.height;
 
 
 
@@ -94,7 +107,7 @@ class Dungeon {
                
                 let tile = new Tile(pos_x, pos_y, TILE_WIDTH, TILE_HEIGHT, color, type);
                 tiles.push(tile);            
-                console.log(this.dungeon_array[y][x]);
+                // console.log(this.dungeon_array[y][x]);
             }
         }
 
@@ -111,49 +124,129 @@ class Dungeon {
     }
 
 
+}
+
+
+
+class Player {
+
+    constructor() {
+        this.x = Math.floor(TILES_PER_ROW/2) * TILE_WIDTH;
+        this.y = Math.floor(TILES_PER_COLUMN/2) * TILE_HEIGHT;
+        this.width = TILE_WIDTH;
+        this.height = TILE_HEIGHT;
+        this.color = 'tomato';
+    }
+
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+
+
+    move(key) {
+
+        if (key === 'ArrowRight') {
+
+            if (this.x >= MOVE_THRESHOLD_SCREEN_RIGHT) {
+                dungeon.tiles.forEach(tile => {
+                    tile.x -= TILE_WIDTH;
+                })
+            }
+            else {
+                this.x += TILE_WIDTH;
+            }
+        }
+
+
+        if (key === 'ArrowLeft') {
+
+            if (this.x < MOVE_THRESHOLD_SCREEN_LEFT) {
+                dungeon.tiles.forEach(tile => {
+                    tile.x += TILE_WIDTH;
+                })
+            }
+            else {
+                this.x -= TILE_WIDTH;
+            }
+        }
+        
+
+        if (key === 'ArrowDown') {
+
+            if (this.y >= MOVE_THRESHOLD_SCREEN_BOTTOM) {
+                dungeon.tiles.forEach(tile => {
+                    tile.y -= TILE_HEIGHT;
+                })
+            }
+            else {
+                this.y += TILE_HEIGHT;
+            }
+        }
+
+
+        if (key === 'ArrowUp') {
+
+            if (this.y <= MOVE_THRESHOLD_SCREEN_TOP) {
+                dungeon.tiles.forEach(tile => {
+                    tile.y += TILE_HEIGHT;
+                })
+            }
+            else {
+                this.y -= TILE_HEIGHT;
+            }
+        }
+
+
+
+    }
 
 
 }
 
 
-array = Array([0,0,0,0,0,0],
-              [0,1,1,1,1,0],
-              [0,1,0,0,1,0],
-              [0,1,1,0,1,0],
-              [0,1,1,1,1,0],
-              [0,0,0,0,0,0])
+function generateRandomArray(rows, columns) {
+    let arr = [];
+
+    for (let i = 0; i < rows; i++) {
+        arr[i] = [];
+
+        for (let j = 0; j < columns; j++) {
+            if (i === 0 || j === 0 || i === rows - 1 || j === columns - 1) {
+                arr[i][j] = 0;
+            } else {
+                arr[i][j] = Math.random() < 0.5 ? 0 : 1;
+            }
+        }
+    }
+    return arr;
+}
+
+
+
+let array = generateRandomArray(100, 100);
+
+// Array([0,0,0,0,0,0],
+//               [0,1,1,1,1,0],
+//               [0,1,0,0,1,0],
+//               [0,1,1,0,1,0],
+//               [0,1,1,1,1,0],
+//               [0,0,0,0,0,0])
 
 const dungeon = new Dungeon(array);
-console.log(dungeon.tiles);
+const player = new Player();
+
+player.draw();
 dungeon.draw();
 
 
 
+
 document.addEventListener('keydown', function(e) {
-    console.log(e.key);
-    if (e.key === 'ArrowRight') {
-        dungeon.tiles.forEach(tile => {
-            tile.x -= TILE_WIDTH;
-        })
-    }
-    
-    if (e.key === 'ArrowLeft') {
-        dungeon.tiles.forEach(tile => {
-            tile.x += TILE_WIDTH;
-        })
-    }
-
-    if (e.key === 'ArrowDown') {
-        dungeon.tiles.forEach(tile => {
-            tile.y -= TILE_WIDTH;
-        })
-    }
-
-    if (e.key === 'ArrowUp') {
-        dungeon.tiles.forEach(tile => {
-            tile.y += TILE_WIDTH;
-        })
-    }
-
+    player.move(e.key);
     dungeon.draw();
+    player.draw();
 })
+
+
