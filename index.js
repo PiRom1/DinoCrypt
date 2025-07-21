@@ -1,30 +1,59 @@
+
+//// Create canva
 const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
 // Ajuster la résolution du canvas à la taille d'affichage :
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
-const ctx = canvas.getContext('2d');
-
-
-console.log(canvas.width, screen.width);
-// Compute tile_width according to canvas width
+//// Get parameters
 
 const TILES_PER_ROW = 15;
 const TILES_PER_COLUMN = 10;
-
 const TILE_WIDTH = canvas.width / TILES_PER_ROW;
 const TILE_HEIGHT = canvas.height / TILES_PER_COLUMN;
 
 const MOVE_THRESHOLD = 0.4;
-
-
 const MOVE_THRESHOLD_SCREEN_LEFT = MOVE_THRESHOLD * canvas.width - 5;
 const MOVE_THRESHOLD_SCREEN_RIGHT = (1 - MOVE_THRESHOLD) * canvas.width;
 const MOVE_THRESHOLD_SCREEN_TOP = MOVE_THRESHOLD * canvas.height - 5;
 const MOVE_THRESHOLD_SCREEN_BOTTOM = (1 - MOVE_THRESHOLD) * canvas.height;
 
 
+// Useful functions
 
+// Returns a random real number between min and max
+function large_random(min, max) {
+    return min + (max - min) * Math.random();
+}
+
+// Returns a random integer number between max and min
+function randint(min, max) {
+    return Math.floor(min + Math.random() * (max - min));
+}
+
+// Generate a random array for the dungeon
+function generateRandomArray(rows, columns) {
+    let arr = [];
+
+    for (let i = 0; i < rows; i++) {
+        arr[i] = [];
+
+        for (let j = 0; j < columns; j++) {
+            if (i === 0 || j === 0 || i === rows - 1 || j === columns - 1) {
+                arr[i][j] = 0;
+            } else {
+                arr[i][j] = Math.random() < 0.5 ? 0 : 1;
+            }
+        }
+    }
+    return arr;
+}
+
+
+
+// Tile class : Base-design of the game, visual element to draw (wall or ground)
 class Tile {
     constructor(x, y, width, height, color, type) {
         this.x = x;
@@ -36,7 +65,7 @@ class Tile {
         this.image = this.get_image();
     }
 
-
+    // Get image of the tile
     get_image() {
         let image = new Image();
         if (this.type === 'ground') {
@@ -47,14 +76,12 @@ class Tile {
             let i = randint(1, 3);
             image.src = `assets/tiles/wall/${i}.png`;
         }
-        
         return image;
-
     }
 
+    // Draw image of the tile
     draw() {
-        // ctx.fillStyle = this.color;
-        // ctx.fillRect(this.x, this.y, this.width, this.height);
+        
         if (this.image.complete) { // s'assurer que l'image est chargée
             ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
         }
@@ -67,24 +94,17 @@ class Tile {
 
 }
 
-function large_random(min, max) {
-    return min + (max - min) * Math.random();
-}
-
-function randint(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 
 
-
+// Dungeon class. Support of the dungeon map. Contains array of the dungeon with the chests
 class Dungeon {
     constructor(dungeon_array) {
         this.dungeon_array = dungeon_array;
         this.tiles = this.get_tiles();
     }
 
-
+    // Get a list of the tiles of the dungeon
     get_tiles() {
         console.log(this.dungeon_array.length);
         console.log(this.dungeon_array[0].length);
@@ -116,7 +136,7 @@ class Dungeon {
     }
 
 
-
+    // Draws the dungeon
     draw() {
         this.tiles.forEach(tile => {
             tile.draw();
@@ -127,7 +147,7 @@ class Dungeon {
 }
 
 
-
+// Class for the player. Can draw and move the player
 class Player {
 
     constructor() {
@@ -138,13 +158,13 @@ class Player {
         this.color = 'tomato';
     }
 
-
+    // Draw the player
     draw() {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 
-
+    // Move the player, or the dungeon of the offset is reached
     move(key) {
 
         if (key === 'ArrowRight') {
@@ -206,22 +226,6 @@ class Player {
 }
 
 
-function generateRandomArray(rows, columns) {
-    let arr = [];
-
-    for (let i = 0; i < rows; i++) {
-        arr[i] = [];
-
-        for (let j = 0; j < columns; j++) {
-            if (i === 0 || j === 0 || i === rows - 1 || j === columns - 1) {
-                arr[i][j] = 0;
-            } else {
-                arr[i][j] = Math.random() < 0.5 ? 0 : 1;
-            }
-        }
-    }
-    return arr;
-}
 
 
 
@@ -234,9 +238,12 @@ let array = generateRandomArray(100, 100);
 //               [0,1,1,1,1,0],
 //               [0,0,0,0,0,0])
 
+// Initialize ddungeon and player
 const dungeon = new Dungeon(array);
 const player = new Player();
 
+
+// GAME
 player.draw();
 dungeon.draw();
 
