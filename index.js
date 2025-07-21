@@ -9,16 +9,14 @@ canvas.height = canvas.clientHeight;
 
 //// Get parameters
 
-const TILES_PER_ROW = 15;
-const TILES_PER_COLUMN = 10;
+const TILES_PER_ROW = 25;
+const TILES_PER_COLUMN = 18;
 const TILE_WIDTH = canvas.width / TILES_PER_ROW;
 const TILE_HEIGHT = canvas.height / TILES_PER_COLUMN;
 
 const MOVE_THRESHOLD = 0.4;
-const MOVE_THRESHOLD_SCREEN_LEFT = MOVE_THRESHOLD * canvas.width - 5;
-const MOVE_THRESHOLD_SCREEN_RIGHT = (1 - MOVE_THRESHOLD) * canvas.width;
-const MOVE_THRESHOLD_SCREEN_TOP = MOVE_THRESHOLD * canvas.height - 5;
-const MOVE_THRESHOLD_SCREEN_BOTTOM = (1 - MOVE_THRESHOLD) * canvas.height;
+const MOVE_THRESHOLD_X = MOVE_THRESHOLD * TILES_PER_ROW;
+const MOVE_THRESHOLD_y = MOVE_THRESHOLD * TILES_PER_COLUMN;
 
 
 // Useful functions
@@ -83,11 +81,11 @@ class Tile {
     draw() {
         
         if (this.image.complete) { // s'assurer que l'image est chargée
-            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            ctx.drawImage(this.image, this.x * this.width, this.y * this.height, this.width, this.height);
         }
         else {
             this.image.onload = () => {
-                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                ctx.drawImage(this.image, this.x * this.width, this.y * this.height, this.width, this.height);
             };
         }
     }
@@ -122,8 +120,8 @@ class Dungeon {
                     type = 'ground';
                 }
 
-                let  pos_x = x * TILE_WIDTH;
-                let pos_y = y * TILE_HEIGHT;
+                let  pos_x = x;
+                let pos_y = y;
                
                 let tile = new Tile(pos_x, pos_y, TILE_WIDTH, TILE_HEIGHT, color, type);
                 tiles.push(tile);            
@@ -133,6 +131,11 @@ class Dungeon {
 
         return tiles;
 
+    }
+
+
+    is_ground(x,y) {
+        return (this.dungeon_array[y][x] === 1)
     }
 
 
@@ -151,73 +154,80 @@ class Dungeon {
 class Player {
 
     constructor() {
-        this.x = Math.floor(TILES_PER_ROW/2) * TILE_WIDTH;
-        this.y = Math.floor(TILES_PER_COLUMN/2) * TILE_HEIGHT;
+        this.x = 5;
+        this.y = 5;
         this.width = TILE_WIDTH;
         this.height = TILE_HEIGHT;
         this.color = 'tomato';
+        this.offset_x = 0; // Le décalage entre la vraie position et la position affichée sur l'écran (car on ne voit pas tout le donjon à la fois)
+        this.offset_y = 0;
     }
 
     // Draw the player
     draw() {
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        let pos_x = (this.x - this.offset_x) * this.width;
+        let pos_y = (this.y - this.offset_y) * this.height;
+        ctx.fillRect(pos_x, pos_y, this.width, this.height);
     }
 
+
     // Move the player, or the dungeon of the offset is reached
-    move(key) {
+    move(key, dungeon) {
+
 
         if (key === 'ArrowRight') {
-
-            if (this.x >= MOVE_THRESHOLD_SCREEN_RIGHT) {
-                dungeon.tiles.forEach(tile => {
-                    tile.x -= TILE_WIDTH;
-                })
-            }
-            else {
-                this.x += TILE_WIDTH;
+            if (dungeon.is_ground(this.x + 1, this.y)) {
+                if (this.x - this.offset_x >= TILES_PER_ROW - MOVE_THRESHOLD_X) {
+                    dungeon.tiles.forEach(tile => {
+                        tile.x -= 1;
+                    })
+                    this.offset_x += 1;
+                }
+                this.x += 1;
             }
         }
 
 
         if (key === 'ArrowLeft') {
-
-            if (this.x < MOVE_THRESHOLD_SCREEN_LEFT) {
-                dungeon.tiles.forEach(tile => {
-                    tile.x += TILE_WIDTH;
-                })
-            }
-            else {
-                this.x -= TILE_WIDTH;
+            if (dungeon.is_ground(this.x - 1, this.y)) {
+                if (this.x - this.offset_x < MOVE_THRESHOLD_X) {
+                    dungeon.tiles.forEach(tile => {
+                        tile.x += 1;
+                    })
+                    this.offset_x -= 1;
+                }
+                this.x -= 1;
             }
         }
         
 
         if (key === 'ArrowDown') {
-
-            if (this.y >= MOVE_THRESHOLD_SCREEN_BOTTOM) {
-                dungeon.tiles.forEach(tile => {
-                    tile.y -= TILE_HEIGHT;
-                })
-            }
-            else {
-                this.y += TILE_HEIGHT;
+            if (dungeon.is_ground(this.x, this.y + 1)) {
+                if (this.y - this.offset_y >= TILES_PER_COLUMN - MOVE_THRESHOLD_y) {
+                    dungeon.tiles.forEach(tile => {
+                        tile.y -= 1;
+                    })
+                    this.offset_y += 1;
+                }
+                this.y += 1;
             }
         }
 
 
         if (key === 'ArrowUp') {
-
-            if (this.y <= MOVE_THRESHOLD_SCREEN_TOP) {
-                dungeon.tiles.forEach(tile => {
-                    tile.y += TILE_HEIGHT;
-                })
-            }
-            else {
-                this.y -= TILE_HEIGHT;
+            if (dungeon.is_ground(this.x, this.y - 1)) {
+                if ((this.y - this.offset_y) <= MOVE_THRESHOLD_y) {
+                    dungeon.tiles.forEach(tile => {
+                        tile.y += 1;
+                    })
+                    this.offset_y -= 1;
+                }
+                this.y -= 1;
             }
         }
 
+        console.log(`offset x : ${this.offset_x} / offset y : ${this.offset_y}`)
 
 
     }
@@ -231,29 +241,34 @@ class Player {
 
 let array = generateRandomArray(100, 100);
 
-// Array([0,0,0,0,0,0],
-//               [0,1,1,1,1,0],
-//               [0,1,0,0,1,0],
-//               [0,1,1,0,1,0],
-//               [0,1,1,1,1,0],
-//               [0,0,0,0,0,0])
-
 // Initialize ddungeon and player
 const dungeon = new Dungeon(array);
 const player = new Player();
 
 
-// GAME
-player.draw();
-dungeon.draw();
-
-
-
-
+// Déplacement du joueur, déclenché par le clavier
 document.addEventListener('keydown', function(e) {
-    player.move(e.key);
+    player.move(e.key, dungeon);
+    // Pas besoin de dessiner ici, le gameLoop s'en chargera à la prochaine frame
+});
+
+// Fonction qui dessine le jeu complet
+function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     dungeon.draw();
     player.draw();
-})
+}
+
+// La boucle principale du jeu (appelée à chaque frame)
+function gameLoop() {
+    drawGame();
+    // Appelle gameLoop de nouveau au prochain rafraîchissement
+    requestAnimationFrame(gameLoop);
+}
+
+// Démarrage de la boucle d’animation
+gameLoop();
+
+
 
 
