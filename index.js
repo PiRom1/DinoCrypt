@@ -18,6 +18,9 @@ const MOVE_THRESHOLD = 0.4;
 const MOVE_THRESHOLD_X = MOVE_THRESHOLD * TILES_PER_ROW;
 const MOVE_THRESHOLD_y = MOVE_THRESHOLD * TILES_PER_COLUMN;
 
+const NB_MOVING_FRAMES = 20; // Nb frames for one deplacement
+
+
 
 // Useful functions
 
@@ -175,16 +178,20 @@ class Player {
     // Move the player, or the dungeon of the offset is reached
     move(key, dungeon) {
 
+        let offset_x_value = 0;
+        let offset_y_value = 0;
+        let x_value = 0;
+        let y_value = 0;
+        let tile_x = 0;
+        let tile_y = 0;
 
         if (key === 'ArrowRight') {
             if (dungeon.is_ground(this.x + 1, this.y)) {
                 if (this.x - this.offset_x >= TILES_PER_ROW - MOVE_THRESHOLD_X) {
-                    dungeon.tiles.forEach(tile => {
-                        tile.x -= 1;
-                    })
-                    this.offset_x += 1;
+                    tile_x = -1;
+                    offset_x_value = 1;
                 }
-                this.x += 1;
+                    x_value = 1;
             }
         }
 
@@ -192,12 +199,10 @@ class Player {
         if (key === 'ArrowLeft') {
             if (dungeon.is_ground(this.x - 1, this.y)) {
                 if (this.x - this.offset_x < MOVE_THRESHOLD_X) {
-                    dungeon.tiles.forEach(tile => {
-                        tile.x += 1;
-                    })
-                    this.offset_x -= 1;
+                    tile_x = 1;
+                    offset_x_value = -1;
                 }
-                this.x -= 1;
+                x_value = -1;
             }
         }
         
@@ -205,12 +210,10 @@ class Player {
         if (key === 'ArrowDown') {
             if (dungeon.is_ground(this.x, this.y + 1)) {
                 if (this.y - this.offset_y >= TILES_PER_COLUMN - MOVE_THRESHOLD_y) {
-                    dungeon.tiles.forEach(tile => {
-                        tile.y -= 1;
-                    })
-                    this.offset_y += 1;
+                    tile_y = -1;
+                    offset_y_value = 1;
                 }
-                this.y += 1;
+                y_value = 1;
             }
         }
 
@@ -218,16 +221,46 @@ class Player {
         if (key === 'ArrowUp') {
             if (dungeon.is_ground(this.x, this.y - 1)) {
                 if ((this.y - this.offset_y) <= MOVE_THRESHOLD_y) {
-                    dungeon.tiles.forEach(tile => {
-                        tile.y += 1;
-                    })
-                    this.offset_y -= 1;
+                    tile_y = 1;
+                    offset_y_value = -1;
                 }
-                this.y -= 1;
+                y_value = -1;
             }
         }
 
-        console.log(`offset x : ${this.offset_x} / offset y : ${this.offset_y}`)
+        let frame = 0;
+
+        const animate = () => {
+
+            if ((this.y - this.offset_y) <= MOVE_THRESHOLD_y) {
+                dungeon.tiles.forEach(tile => {
+                        tile.x += tile_x / NB_MOVING_FRAMES;
+                        tile.y += tile_y / NB_MOVING_FRAMES;
+                    })
+                }
+
+            frame += 1;
+            this.x += x_value / NB_MOVING_FRAMES;
+            this.y += y_value / NB_MOVING_FRAMES;
+            this.offset_x += offset_x_value / NB_MOVING_FRAMES;
+            this.offset_y += offset_y_value / NB_MOVING_FRAMES;
+
+            
+
+            if (frame < NB_MOVING_FRAMES) {
+                requestAnimationFrame(animate);
+                }
+            else {
+                this.x = Math.round(this.x);
+                this.y = Math.round(this.y);
+                this.offset_x = Math.round(this.offset_x);
+                this.offset_y = Math.round(this.offset_y);
+            }
+        };
+
+        requestAnimationFrame(animate);
+
+        console.log(`offset x : ${this.offset_x} / offset y : ${this.offset_y} / pos_x : ${this.x} / pos_y : ${this.y}`)
 
 
     }
